@@ -1,0 +1,27 @@
+# 这个是配置shareDingsphere-jdbc-core的 而不是starter的 starter的要使用properties文件 而且仅适用于5.2.1版本
+spring:
+  application:
+    name: sharejdbc
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:sharding.yaml
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 10MB
+server:
+  port: 8088
+  servlet:
+    context-path: /
+    encoding:
+      force: true
+
+mybatis:
+  config-location: classpath:mybatis/mybatis-config.xml
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

@@ -1,0 +1,74 @@
+mode:
+  type: Standalone
+  repository:
+    type: JDBC
+
+dataSources:
+  master1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13306/mytestdb
+    username: myuser
+    password: mypassword
+  master2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13307/mytestdb
+    username: myuser
+    password: mypassword
+  slave1_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13308/mytestdb
+    username: myuser
+    password: mypassword
+  slave1_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13309/mytestdb
+    username: myuser
+    password: mypassword
+  slave2_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13310/mytestdb
+    username: myuser
+    password: mypassword
+  slave2_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13311/mytestdb
+    username: myuser
+    password: mypassword
+rules:
+#垂直分片
+- !SINGLE
+    tables:
+      # - ds_0.t_single # 加载指定单表
+      # - ds_1.* # 加载指定数据源中的全部单表
+      # - "*.*" # 加载全部单表
+      - readwrite_ds.t_user
+      - readwrite_ds_2.t_grade
+- !READWRITE_SPLITTING
+#用官网的dataSourceGroup会报错
+  dataSources:
+    readwrite_ds:
+      writeDataSourceName: master1
+      readDataSourceNames:
+        - slave1_1
+        - slave1_2
+      transactionalReadQueryStrategy: PRIMARY
+      loadBalancerName: random
+    readwrite_ds_2:
+        writeDataSourceName: master2
+        readDataSourceNames:
+        - slave2_1
+        - slave2_2
+        transactionalReadQueryStrategy: PRIMARY
+        loadBalancerName: random
+  loadBalancers:
+    random:
+      type: RANDOM
+      
+props:
+    sql-show: true

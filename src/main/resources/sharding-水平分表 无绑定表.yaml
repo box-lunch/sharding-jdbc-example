@@ -1,0 +1,140 @@
+mode:
+  type: Standalone
+  repository:
+    type: JDBC
+
+dataSources:
+  master1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13306/mytestdb
+    username: myuser
+    password: mypassword
+  master2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13307/mytestdb
+    username: myuser
+    password: mypassword
+  slave1_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13308/mytestdb
+    username: myuser
+    password: mypassword
+  slave1_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13309/mytestdb
+    username: myuser
+    password: mypassword
+  slave2_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13310/mytestdb
+    username: myuser
+    password: mypassword
+  slave2_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13311/mytestdb
+    username: myuser
+    password: mypassword
+
+rules:
+# 水平分片
+- !SHARDING
+  tables: # 自动分片表规则配置 没有数据库分片策略 尽在table里有
+    t_order: # 逻辑表名称
+      actualDataNodes: readwrite_ds_${1..2}.t_order_${0..1} # 数据源名称+表名称
+      databaseStrategy: #不能使用自动分片算法
+        standard:
+          shardingColumn: user_id
+          shardingAlgorithmName: database_inline
+      tableStrategy: # 切分策略
+        standard: # 用于单分片键的标准分片场景
+          shardingColumn: order_no # 分片列名称
+          shardingAlgorithmName: t_order_inline # 不得使用自动分片算法
+      keyGenerateStrategy: # 主键生成策略
+        column: id # 主键列名称
+        keyGeneratorName: snowflake # 主键生成器名称
+      # auditStrategy: # 分片审计策略
+      #   auditorNames: # 分片审计算法名称
+      #     - sharding_key_required_auditor
+      #   allowHintDisable: true # 是否禁用分片审计hint
+  # autoTables: # 自动分片表规则配置 没有数据库分片策略 尽在table里有
+  #   t_order: # 逻辑表名称
+  #     actualDataSources: readwrite_ds_${1..2} # 数据源名称
+  #     shardingStrategy: # 切分策略
+  #       standard: # 用于单分片键的标准分片场景
+  #         shardingColumn: order_no # 分片列名称
+  #         shardingAlgorithmName: alg_oroder_hash_mod # 自动分片算法名称
+  #     keyGenerateStrategy: # 主键生成策略
+  #       column: id # 主键列名称
+  #       keyGeneratorName: snowflake # 主键生成器名称
+  #     auditStrategy: # 分片审计策略
+  #       auditorNames: # 分片审计算法名称
+  #         - sharding_key_required_auditor
+  #       allowHintDisable: true # 是否禁用分片审计hint
+      
+  defaultDatabaseStrategy: #不能使用自动分片算法
+    standard:
+      shardingColumn: user_id
+      shardingAlgorithmName: database_inline
+      # complex: # 用于多分片键的复合分片场景
+      #   shardingColumns: # 分片列名称，多个列以逗号分隔
+      #   shardingAlgorithmName: # 分片算法名称
+      # hint: # Hint 分片策略
+      #   shardingAlgorithmName: # 分片算法名称 可自定义类
+      # none: # 不分片
+  defaultTableStrategy:
+    none:
+  shardingAlgorithms:
+    alg_oroder_hash_mod:
+      type: HASH_MOD
+      props:
+        sharding-count: 2
+    alg_mod:
+      type: MOD
+      props:
+        sharding-count: 2
+    database_inline:
+      type: INLINE
+      props:
+        algorithm-expression: readwrite_ds_${user_id % 2 + 1}
+    t_order_inline:
+      type: INLINE
+      props:
+        algorithm-expression: t_order_${order_no.hashCode() % 2}
+  auditors:
+    sharding_key_required_auditor:
+      type: DML_SHARDING_CONDITIONS # 对逻辑表查询必须带上分片键
+  keyGenerators:
+  #支持自定义 就是要自己去实现 SharedingKeyGenerator接口
+    snowflake:
+      type: SNOWFLAKE
+
+# 读写分离
+- !READWRITE_SPLITTING
+#用官网的dataSourceGroup会报错
+  dataSources:
+    readwrite_ds_1:
+      writeDataSourceName: master1
+      readDataSourceNames:
+        - slave1_1
+        - slave1_2
+      transactionalReadQueryStrategy: PRIMARY
+      loadBalancerName: random
+    readwrite_ds_2:
+        writeDataSourceName: master2
+        readDataSourceNames:
+        - slave2_1
+        - slave2_2
+        transactionalReadQueryStrategy: PRIMARY
+        loadBalancerName: random
+  loadBalancers:
+    random:
+      type: RANDOM
+      
+props:
+    sql-show: true
