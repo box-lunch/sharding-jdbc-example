@@ -60,6 +60,6 @@ sudo ./slave.sh mysql-slave2-2 172.20.0.3 master2_slave 123456 binlog.000001 157
 
 ## 测试sharding
 
-- 根据需要创建shading.yaml文件，或可重命名已创建的参考文件。详细配置参考sharing-jdbc官网，注意5.2.1版本以后不再有boot-starter，本项目是基于5.5的版本进行配置的。
+- 根据需要创建sharding.yaml文件，或可重命名已创建的参考文件。详细配置参考ShardingSphere-JDBC-jdbc官网，注意5.2.1版本以后不再有boot-starter，本项目是基于5.5的版本进行配置的。
 - 对应entities文件的实体去数据库创建相应的表，仅在主库创建即可，从库会自动同步。若是需要创建自己的测试实体，除了表和实体以外，还要创建mapper文件。参考mybatis。
 - 运行test下的测试方法。
