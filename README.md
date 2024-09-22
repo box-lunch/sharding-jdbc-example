@@ -1,6 +1,6 @@
-# sharding-jdbc-example
+#  ShardingSphere-JDBC-example
 
-一个快速搭建shading-jdbc的测试环境，及测试功能的样例项目。
+一个包含提供搭建ShardingSphere-JDBC环境的脚本，及测试功能的样例项目。
 
 ## 创建容器环境
 
