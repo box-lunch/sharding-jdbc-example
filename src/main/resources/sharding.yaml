@@ -1,0 +1,118 @@
+mode:
+  type: Standalone
+  repository:
+    type: JDBC
+
+dataSources:
+  master1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13306/mytestdb
+    username: myuser
+    password: mypassword
+  master2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13307/mytestdb
+    username: myuser
+    password: mypassword
+  slave1_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13308/mytestdb
+    username: myuser
+    password: mypassword
+  slave1_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13309/mytestdb
+    username: myuser
+    password: mypassword
+  slave2_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13310/mytestdb
+    username: myuser
+    password: mypassword
+  slave2_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://192.168.5.120:13311/mytestdb
+    username: myuser
+    password: mypassword
+
+rules:
+  # 水平分片
+  - !SHARDING
+    tables: # 自动分片表规则配置 没有数据库分片策略 尽在table里有
+      t_order: # 逻辑表名称
+        actualDataNodes: readwrite_ds_${1..2}.t_order_${0..1} # 数据源名称+表名称
+        tableStrategy: # 切分策略
+          standard: # 用于单分片键的标准分片场景
+            shardingColumn: order_no # 分片列名称
+            shardingAlgorithmName: t_order_inline # 不得使用自动分片算法
+        keyGenerateStrategy: # 主键生成策略
+          column: id # 主键列名称
+          keyGeneratorName: snowflake # 主键生成器名称
+      t_order_item:
+        actualDataNodes: readwrite_ds_${1..2}.t_order_item_${0..1}
+        tableStrategy:
+          standard:
+            shardingColumn: order_no
+            shardingAlgorithmName: t_order_item_inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+    # `绑定表：`指分片规则一致的一组分片表。 使用绑定表进行多表关联查询时，必须使用分片键进行关联，否则会出现笛卡尔积关联或跨库关联，从而影响查询效率。
+    bindingTables: # 绑定表规则列表
+      - t_order, t_order_item
+    defaultDatabaseStrategy: #不能使用自动分片算法
+      standard:
+        shardingColumn: user_id
+        shardingAlgorithmName: database_inline
+    defaultTableStrategy:
+      none:
+    shardingAlgorithms:
+      database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: readwrite_ds_${user_id % 2 + 1}
+      t_order_inline:
+        type: INLINE
+        props:
+          algorithm-expression: t_order_${order_no.hashCode() % 2}
+      t_order_item_inline:
+        type: INLINE
+        props:
+          algorithm-expression: t_order_item_${order_no.hashCode() % 2} # 一旦我的表名为t_order_item0 且这里配置t_order_item${order_no.hashCode() % 2} 就会失败运行
+    auditors:
+      sharding_key_required_auditor:
+        type: DML_SHARDING_CONDITIONS
+    keyGenerators:
+      #支持自定义 就是要自己去实现 SharedingKeyGenerator接口
+      snowflake:
+        type: SNOWFLAKE
+
+  # 读写分离
+  - !READWRITE_SPLITTING #用官网的dataSourceGroup会报错
+    dataSources:
+      readwrite_ds_1:
+        writeDataSourceName: master1
+        readDataSourceNames:
+          - slave1_1
+          - slave1_2
+        transactionalReadQueryStrategy: PRIMARY
+        loadBalancerName: random
+      readwrite_ds_2:
+        writeDataSourceName: master2
+        readDataSourceNames:
+          - slave2_1
+          - slave2_2
+        transactionalReadQueryStrategy: PRIMARY
+        loadBalancerName: random
+    loadBalancers:
+      random:
+        type: RANDOM
+
+props:
+  sql-show: true

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.formerlunchbox.sharding.jdbc.mapper.OrderMapper">
+  <select id="getOrderAmount" resultType="com.formerlunchbox.sharding.jdbc.entities.vo.OrderVO">
+      SELECT 
+          o.order_no AS orderNo, 
+          SUM(i.price * i.count) AS amount
+      FROM t_order o 
+      JOIN t_order_item i ON o.order_no = i.order_no
+      GROUP BY 
+          o.order_no
+  </select>
+</mapper>

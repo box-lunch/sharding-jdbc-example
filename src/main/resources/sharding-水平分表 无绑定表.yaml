@@ -90,14 +90,14 @@ rules:
   defaultTableStrategy:
     none:
   shardingAlgorithms:
-    alg_oroder_hash_mod:
-      type: HASH_MOD
-      props:
-        sharding-count: 2
-    alg_mod:
-      type: MOD
-      props:
-        sharding-count: 2
+    # alg_oroder_hash_mod:
+    #   type: HASH_MOD
+    #   props:
+    #     sharding-count: 2
+    # alg_mod:
+    #   type: MOD
+    #   props:
+    #     sharding-count: 2
     database_inline:
       type: INLINE
       props:
@@ -105,7 +105,7 @@ rules:
     t_order_inline:
       type: INLINE
       props:
-        algorithm-expression: t_order_${order_no.hashCode() % 2}
+        algorithm-expression: t_order_${order_no.hashCode() % 2} # 这个分配方法不好，会导致数据倾斜 自行修改
   auditors:
     sharding_key_required_auditor:
       type: DML_SHARDING_CONDITIONS # 对逻辑表查询必须带上分片键
